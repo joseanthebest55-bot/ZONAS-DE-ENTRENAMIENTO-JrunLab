@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Modelo de Zonas JRUN LAB</title>
+
+<style>
+body {
+  background:#111;
+  color:white;
+  font-family:Arial, sans-serif;
+  text-align:center;
+  padding:40px;
+}
+
+.container {
+  max-width:600px;
+  margin:auto;
+}
+
+input {
+  width:100%;
+  padding:10px;
+  margin:6px 0;
+}
+
+button {
+  width:100%;
+  padding:12px;
+  background:#ff6a00;
+  color:white;
+  border:none;
+  cursor:pointer;
+  font-size:16px;
+}
+
+.result {
+  margin-top:25px;
+  background:#1c1c1c;
+  padding:20px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+  <h1>Modelo de Zonas JRUN LAB</h1>
+  <p>Introduce uno o varios tiempos para estimar tu VAM real</p>
+
+  <h3>1 km</h3>
+  <input type="number" id="t1m" placeholder="Minutos">
+  <input type="number" id="t1s" placeholder="Segundos">
+
+  <h3>2 km</h3>
+  <input type="number" id="t2m" placeholder="Minutos">
+  <input type="number" id="t2s" placeholder="Segundos">
+
+  <h3>5 km</h3>
+  <input type="number" id="t5m" placeholder="Minutos">
+  <input type="number" id="t5s" placeholder="Segundos">
+
+  <h3>10 km</h3>
+  <input type="number" id="t10m" placeholder="Minutos">
+  <input type="number" id="t10s" placeholder="Segundos">
+
+  <h3>Media Maratón (21.1 km)</h3>
+  <input type="number" id="t21m" placeholder="Minutos">
+  <input type="number" id="t21s" placeholder="Segundos">
+
+  <button onclick="calculate()">Calcular Zonas</button>
+
+  <div class="result" id="output"></div>
+
+</div>
+
+<script>
+
+function paceFromSpeed(speed){
+    let paceMin = 60 / speed;
+    let min = Math.floor(paceMin);
+    let sec = Math.round((paceMin - min) * 60);
+    if(sec < 10){ sec = "0" + sec; }
+    return min + ":" + sec + " /km";
+}
+
+function getTime(mId, sId){
+    let m = parseFloat(document.getElementById(mId).value);
+    let s = parseFloat(document.getElementById(sId).value);
+    if(isNaN(m)) return null;
+    if(isNaN(s)) s = 0;
+    return m + (s/60);
+}
+
+function calculate(){
+
+    let data = [
+        {dist:1,  time:getTime("t1m","t1s"),  pct:1.02, weight:0.9},
+        {dist:2,  time:getTime("t2m","t2s"),  pct:1.00, weight:1.0},
+        {dist:5,  time:getTime("t5m","t5s"),  pct:0.95, weight:0.8},
+        {dist:10, time:getTime("t10m","t10s"), pct:0.90, weight:0.6},
+        {dist:21.1,time:getTime("t21m","t21s"), pct:0.85, weight:0.5}
+    ];
+
+    let vamSum = 0;
+    let weightSum = 0;
+
+    data.forEach(d => {
+        if(d.time !== null){
+            let speed = d.dist / (d.time / 60);
+            let vamEst = speed / d.pct;
+            vamSum += vamEst * d.weight;
+            weightSum += d.weight;
+        }
+    });
+
+    if(weightSum === 0){
+        document.getElementById("output").innerHTML = "Introduce al menos un tiempo válido.";
+        return;
+    }
+
+    let vam = vamSum / weightSum;
+
+    let z1 = vam * 0.60;
+    let z2 = vam * 0.80;
+    let z3 = vam;
+
+    document.getElementById("output").innerHTML = `
+        <h3>Resultados:</h3>
+        <p><strong>VAM estimada:</strong> ${vam.toFixed(2)} km/h (${paceFromSpeed(vam)})</p>
+        <hr>
+        <p><strong>Zona 3 (80-100% VAM):</strong> ${paceFromSpeed(z2)} – ${paceFromSpeed(z3)}</p>
+        <p><strong>Zona 2 (60-80% VAM):</strong> ${paceFromSpeed(z1)} – ${paceFromSpeed(z2)}</p>
+        <p><strong>Zona 1 (<60% VAM):</strong> Más lento que ${paceFromSpeed(z1)}</p>
+    `;
+}
+
+</script>
+
+</body>
+</html>
